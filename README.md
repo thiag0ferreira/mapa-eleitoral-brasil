@@ -1,46 +1,35 @@
-# Mapa Eleitoral Brasil — v0.2 (navegação experimental)
+# Mapa Eleitoral Brasil 2.0 — Fase 1 (DF)
 
-Aplicativo Expo (Android/iOS/web) com camada eleitoral **fictícia** e consulta de destinos por endereço.
-
-**IMPORTANTE:** os resultados de voto exibidos NÃO são dados do TSE. Não é possível inferir a opinião política dos moradores ou a receptividade de pessoas em um endereço pelo resultado eleitoral.
-
-## Funções
-
-- Buscar destino brasileiro manualmente (sem autocomplete);
-- Exibir marcador no mapa;
-- Traçar rota estimada desde **Brasília, DF (origem fixa demonstrativa)**;
-- Exibir distância e duração estimadas, sem tráfego ao vivo;
-- Ligar/desligar a camada eleitoral fictícia por estado;
-- Executar no navegador e em React Native.
+Aplicativo Expo com busca de lugares OSM, rota experimental, GPS com permissão, cadastro/login Supabase e votos de classificação **colaborativa** verde/vermelho. Não apresenta a preferência política real de qualquer estabelecimento; é uma votação de percepção dos participantes.
 
 ## Executar
-
 ```bash
 npm install
 npm run web
 ```
+No celular: `npm start` e Expo Go.
 
-Para Android/iOS, execute `npm start` e teste no Expo Go. Funcionalidade nativa ainda não validada em aparelhos.
+## Ativar autenticação e votação
+1. Crie um projeto gratuito em https://supabase.com/dashboard.
+2. No Supabase, abra **SQL Editor** e execute `supabase/migrations/202610270001_initial.sql`.
+3. Configure **Authentication → Providers → Email** e escolha se exige confirmação por e-mail.
+4. Em desenvolvimento local, copie `.env.example` para `.env`, preenchendo a **Project URL** e a **publishable/anon key** do Supabase (NUNCA a service_role).
+5. No GitHub, abra **Settings → Secrets and variables → Actions → Variables** e crie **EXPO_PUBLIC_SUPABASE_URL** e **EXPO_PUBLIC_SUPABASE_ANON_KEY**. São configurações públicas de cliente, não segredos. Faça novo deploy pelo workflow Pages.
+6. Configure Authentication → URL Configuration com a URL real do GitHub Pages, caso utilize links de confirmação por email. Ajustes adicionais de deep link serão necessários para nativo.
 
-## GitHub Pages
+## Regras de votação
+- Uma escolha por usuário/estabelecimento, alterável.
+- Classificação verde/vermelho somente a partir de **20 votos** e **60%** de predominância; caso contrário, sem classificação.
+- Autorização no banco via JWT e RLS. Nunca publicar chaves de administrador.
+- A API de gravação aceita metadados OSM do cliente; **a existência do local ainda não é validada por backend próprio**. Antes de lançamento público, verificar IDs OSM no servidor, aplicar rate limits, antifraude, denúncias e políticas LGPD.
 
-No repositório, abra **Settings → Pages**, selecione **GitHub Actions** e acompanhe o workflow `Publicar web no GitHub Pages`. Endereço: https://thiag0ferreira.github.io/mapa-eleitoral-brasil/
+## Limites do protótipo
+- Busca manual via Nominatim **não atende uso em massa**. Limite de 1 req/s vale para todos os usuários somados. Não use autocomplete.
+- Busca restrita a uma caixa geográfica que inclui Brasília e DF; regiões na borda podem variar.
+- Rota via OSRM demonstrativo, sem SLA ou tráfego. Não é um Waze completo.
+- O cadastro ainda não tem painel de moderação, denúncia, exclusão de conta nem sistema de avaliação por estrelas. Não divulgar amplamente até implementá-los.
+- Google Places não foi conectado: OpenStreetMap é a fonte inicial aprovada.
+- O GitHub Pages hospeda só o frontend. A persistência depende de configurar Supabase.
 
-## Serviços externos e limites
-
-- Geocodificação: Nominatim público, apenas buscas explicitamente acionadas pelo usuário; no máximo uma busca por segundo por instância, cache durante a sessão e nenhuma sugestão automática. **O limite oficial é global ao aplicativo, não por usuário**. Essa implementação somente serve para teste com pouquíssimos usuários, não para uso público em escala. Antes de lançar comercialmente, migrar a provedor próprio/contratado ou proxy com rate limiting central. Leia https://operations.osmfoundation.org/policies/nominatim/
-- Rotas: servidor público demonstrativo OSRM, sem SLA e inadequado para distribuição massiva.
-- Tiles: OpenStreetMap comunitário, sujeito a política e restrições de carga.
-- Origem: Brasília, fixa apenas para demonstração. Ainda não há GPS, orientação vocal, atualizações de trânsito ou navegação curva a curva.
-
-## Fonte eleitoral e granularidade
-
-Atualmente a camada é inteiramente **simulada por UF** (`src/data/demo.js`). Futuro processamento **offline** dos dados abertos TSE e malhas IBGE para municípios e pontos georreferenciados dos locais de votação. Um ponto eleitoral não descreve uma área geográfica de influência e não deve pintar ruas ou residências arbitrariamente. Toda eleição exibirá ano, turno, fonte, status da apuração e definição dos candidatos comparados.
-
-## Próximas etapas
-
-1. Integração offline auditável TSE 2022;
-2. GeoJSON municipal simplificado sob demanda;
-3. Pontos reais de locais de votação com metadados agregados;
-4. GPS com permissão e origem editável;
-5. Serviço de geocodificação e rotas com capacidade e SLA para uso em massa.
+## Licença e créditos
+Mapa © OpenStreetMap contributors. Respeitar as políticas de uso dos tiles e geocodificação antes de escalar.

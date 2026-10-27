@@ -2,7 +2,7 @@
   "expo": {
     "name": "Mapa Eleitoral Brasil",
     "slug": "mapa-eleitoral-brasil",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "platforms": [
@@ -12,11 +12,26 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "br.com.mapaeleitoralbrasil.app"
+      "bundleIdentifier": "br.com.mapaeleitoralbrasil.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Usar GPS para calcular rotas quando autorizado."
+      }
     },
     "android": {
-      "package": "br.com.mapaeleitoralbrasil.app"
+      "package": "br.com.mapaeleitoralbrasil.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permitir acesso à localização durante o uso do mapa."
+        }
+      ]
+    ],
     "web": {
       "bundler": "metro",
       "name": "Mapa Eleitoral Brasil"

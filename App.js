@@ -1,52 +1,43 @@
 import React,{useEffect,useState} from 'react';
 import {SafeAreaView,View,Text,ScrollView,TextInput,Pressable,StyleSheet,ActivityIndicator,Linking} from 'react-native';
 import MapScreen from './src/screens/MapScreen';
-import {DEMO,percentual} from './src/data/demo';
-import {carregarGeometria} from './src/services/geometria';
-import {pesquisarDestino,criarRota,LINK_POLITICA} from './src/services/navegacao';
-const fmt=n=>n.toLocaleString('pt-BR');
-const inicio={latitude:-15.7939,longitude:-47.8828,label:'Brasília, DF (origem ilustrativa)'};
+import {buscarEstabelecimentos} from './src/services/lugares';
+import {obterLocalizacaoAtual} from './src/services/localizacao';
+import {supabase,configurado,resumo,votar} from './src/services/supabase';
+import {criarRota} from './src/services/navegacao';
+const BRASILIA={latitude:-15.7939,longitude:-47.8828,label:'Brasília (origem demonstrativa)'};
+const Button=({children,onPress,disabled,secondary})=><Pressable disabled={disabled} onPress={onPress} style={[styles.btn,secondary&&{backgroundColor:'#475569'},disabled&&{opacity:.45}]}><Text style={{color:'white',fontWeight:'700'}}>{children}</Text></Pressable>;
 export default function App(){
- const [geojson,setGeojson]=useState(null),[erroMapa,setErroMapa]=useState('');
- const [selecionado,setSelecionado]=useState(DEMO.find(e=>e.uf==='DF'));
- const [texto,setTexto]=useState(''),[destino,setDestino]=useState(null);
- const [origem,setOrigem]=useState(inicio),[resultadoBusca,setResultadoBusca]=useState(''),[rota,setRota]=useState(null);
- const [buscando,setBuscando]=useState(false),[roteando,setRoteando]=useState(false);
- const [camada,setCamada]=useState(true);
- useEffect(()=>{let ok=true;carregarGeometria().then(g=>ok&&setGeojson(g)).catch(e=>ok&&setErroMapa(e.message));return()=>{ok=false}},[]);
- const buscar=async()=>{
-  if(texto.trim().length<3){setResultadoBusca('Digite um endereço ou local com ao menos 3 caracteres.');return}
-  setBuscando(true);setResultadoBusca('');setRota(null);
-  try{const d=await pesquisarDestino(texto);setDestino(d);setResultadoBusca('Destino encontrado: '+d.label)}
-  catch(e){setResultadoBusca(e.message)}finally{setBuscando(false)}
- };
- const fazerRota=async()=>{
-  if(!destino)return;
-  setRoteando(true);setResultadoBusca('');
-  try{const r=await criarRota(origem,destino);setRota(r)}
-  catch(e){setResultadoBusca(e.message)}finally{setRoteando(false)}
- };
- const vencedor=selecionado.esquerda===selecionado.direita?'Empate':selecionado.esquerda>selecionado.direita?'Esquerda (simulação)':'Direita (simulação)';
- return <SafeAreaView style={s.root}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
- <Text style={s.kicker}>MAPA ELEITORAL • NAVEGAÇÃO EXPERIMENTAL</Text><Text style={s.title}>Para onde vamos?</Text>
- <Text style={s.subtitle}>Busque o destino e consulte uma rota ilustrada com a camada eleitoral de demonstração.</Text>
- <View style={s.notice}><Text style={s.noticeText}>DADOS ELEITORAIS FICTÍCIOS — As cores não descrevem moradores, estabelecimentos, segurança ou acolhimento. Resultados do TSE ainda não integrados.</Text></View>
- <View style={s.card}><Text style={s.label}>Origem (protótipo)</Text><Text style={s.muted}>{origem.label}</Text>
- <Text style={s.label}>Buscar destino no Brasil</Text>
- <View style={s.searchRow}><TextInput style={s.input} value={texto} onChangeText={setTexto} onSubmitEditing={buscar} returnKeyType="search" placeholder="Ex.: Praça dos Três Poderes, Brasília" accessibilityLabel="Endereço de destino"/><Pressable disabled={buscando} onPress={buscar} style={s.button}><Text style={s.buttonText}>{buscando?'Buscando...':'Buscar'}</Text></Pressable></View>
- {destino&&<><Text style={s.muted}>📍 {destino.label}</Text><Pressable disabled={roteando} onPress={fazerRota} style={s.button}><Text style={s.buttonText}>{roteando?'Calculando...':'Traçar rota até o destino'}</Text></Pressable></>}
- {rota&&<Text style={s.route}>Rota estimada: {(rota.distancia/1000).toFixed(1).replace('.',',')} km · {Math.round(rota.duracao/60)} min (sem trânsito ao vivo)</Text>}
- {!!resultadoBusca&&<Text style={s.muted}>{resultadoBusca}</Text>}
- <Text style={s.foot}>Busca manual somente ao clicar em Buscar. Serviço público sujeito a limites de utilização. <Text onPress={()=>Linking.openURL(LINK_POLITICA)} style={s.link}>Política de uso</Text>.</Text>
- </View>
- <View style={s.legend}><Text style={{color:'#dc4545'}}>● Esquerda</Text><Text style={{color:'#239560'}}>● Direita</Text><Text style={{color:'#64748b'}}>● Sem dados</Text></View>
- <Pressable onPress={()=>setCamada(!camada)} style={s.switch}><Text style={s.switchText}>{camada?'Ocultar':'Exibir'} camada eleitoral demonstrativa</Text></Pressable>
- <View style={s.map}>{geojson?<MapScreen geojson={geojson} onSelect={setSelecionado} destino={destino} origem={origem} rota={rota} camada={camada}/>:<View style={s.center}>{erroMapa?<Text style={s.error}>Falha ao carregar malha: {erroMapa}</Text>:<><ActivityIndicator/><Text>Carregando mapa...</Text></>}</View>}</View>
- <View style={s.card}><Text style={s.state}>{selecionado.nome} ({selecionado.uf})</Text><Text style={s.winner}>Maior votação simulada: {vencedor}</Text>
- <View style={s.line}><Text>Candidato fictício A (esquerda)</Text><Text>{fmt(selecionado.esquerda)} · {percentual(selecionado,'esquerda')}</Text></View>
- <View style={s.line}><Text>Candidato fictício B (direita)</Text><Text>{fmt(selecionado.direita)} · {percentual(selecionado,'direita')}</Text></View>
- </View>
- <Text style={s.footer}>Detalhamento futuro: pontos de locais de votação e apuração TSE. Uma seção eleitoral não define o perfil das ruas ao redor. Origem fixa em Brasília apenas para demonstração; geolocalização ainda não está ativa.</Text>
- </ScrollView></SafeAreaView>
+ const [origem,setOrigem]=useState(BRASILIA),[query,setQuery]=useState(''),[results,setResults]=useState([]),[place,setPlace]=useState(null);
+ const [route,setRoute]=useState(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[session,setSession]=useState(null),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[score,setScore]=useState(null);
+ useEffect(()=>{if(!supabase)return;supabase.auth.getSession().then(({data})=>setSession(data.session));const {data:listener}=supabase.auth.onAuthStateChange((_event,s)=>setSession(s));return()=>listener.subscription.unsubscribe()},[]);
+ async function perform(fn){setBusy(true);setMessage('');try{await fn()}catch(e){setMessage(e.message||'Ocorreu um erro')}finally{setBusy(false)}}
+ const search=()=>perform(async()=>{setPlace(null);setRoute(null);const a=await buscarEstabelecimentos(query);setResults(a);if(!a.length)setMessage('Nenhum estabelecimento encontrado. Tente nome e cidade.')});
+ const select=place=>perform(async()=>{setPlace(place);setRoute(null);setScore(await resumo(place))});
+ const gps=()=>perform(async()=>{const p=await obterLocalizacaoAtual();setOrigem(p);setMessage('GPS ativado mediante sua autorização.')});
+ const navigate=()=>perform(async()=>{if(place)setRoute(await criarRota(origem,place))});
+ const login=(signup=false)=>perform(async()=>{if(!supabase)throw Error('Supabase não configurado.');if(password.length<6)throw Error('A senha deve ter ao menos 6 caracteres.');const r=signup?await supabase.auth.signUp({email:email.trim(),password}):await supabase.auth.signInWithPassword({email:email.trim(),password});if(r.error)throw r.error;setMessage(signup?'Cadastro solicitado. Verifique seu e-mail para confirmar, se necessário.':'Login realizado.');});
+ const vote=choice=>perform(async()=>{if(!session)throw Error('Faça login primeiro.');await votar(place,choice);setScore(await resumo(place));setMessage('Voto registrado. Você pode alterar seu voto a qualquer momento.')});
+ return <SafeAreaView style={styles.root}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+ <Text style={styles.eyebrow}>MAPA ELEITORAL BRASIL • FASE 1</Text><Text style={styles.title}>Explore lugares no DF</Text>
+ <Text style={styles.notice}>A classificação política representa apenas votos de usuários do aplicativo — não é uma declaração do estabelecimento nem medida de segurança ou receptividade.</Text>
+ <View style={styles.card}><Text style={styles.h}>Sua origem</Text><Text>{origem.label}</Text><Button onPress={gps} disabled={busy} secondary>Usar minha localização atual (GPS)</Button>
+ <Text style={styles.h}>Pesquisar estabelecimentos</Text><View style={styles.row}><TextInput style={styles.input} value={query} onChangeText={setQuery} placeholder="Ex.: Outback JK Shopping" onSubmitEditing={search}/><Button disabled={busy} onPress={search}>Buscar</Button></View>
+ <Text style={styles.caption}>Busca OpenStreetMap no Distrito Federal. Sem sugestões automáticas; uso experimental de baixo volume.</Text>
+ {results.map(p=><Pressable key={p.id} style={styles.result} onPress={()=>select(p)}><Text style={styles.h}>{p.name}</Text><Text style={styles.caption}>{p.label}</Text></Pressable>)}</View>
+ {place&&<View style={styles.card}><Text style={styles.h}>{place.name}</Text><Text style={styles.caption}>{place.label}</Text><Text style={styles.classification}>Classificação da comunidade: {score?.classificacao||'sem classificação'}</Text>
+ <Text>{score?.total||0} votos · {score?.verdes||0} verdes · {score?.vermelhos||0} vermelhos</Text><Text style={styles.caption}>São necessários pelo menos 20 votos e 60% de predominância para colorir o estabelecimento.</Text>
+ {configurado&&session?<View style={styles.row}><Button disabled={busy} onPress={()=>vote('verde')}>Votar verde</Button><Button disabled={busy} onPress={()=>vote('vermelho')}>Votar vermelho</Button></View>:<Text style={styles.caption}>Faça login para votar. {configurado?'':'A votação será ativada quando o Supabase for configurado.'}</Text>}
+ <Button disabled={busy} onPress={navigate}>Traçar rota até este lugar</Button>
+ {route&&<Text>Rota estimada: {(route.distancia/1000).toFixed(1)} km · {Math.round(route.duracao/60)} min, sem trânsito em tempo real.</Text>}</View>}
+ <View style={styles.map}><MapScreen geojson={null} onSelect={()=>{}} destino={place} origem={origem} rota={route} camada={false}/></View>
+ <View style={styles.card}><Text style={styles.h}>Conta e participação</Text>
+ {!configurado?<Text style={styles.caption}>Modo visual: configure EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY para habilitar cadastro e votos.</Text>:session?<><Text>Conectado: {session.user.email}</Text><Button secondary onPress={()=>perform(async()=>{const {error}=await supabase.auth.signOut();if(error)throw error;})}>Sair</Button></>:<>
+ <TextInput value={email} onChangeText={setEmail} style={styles.input} placeholder="E-mail" autoCapitalize="none" keyboardType="email-address"/>
+ <TextInput value={password} onChangeText={setPassword} style={styles.input} placeholder="Senha" secureTextEntry autoCapitalize="none"/>
+ <View style={styles.row}><Button disabled={busy} onPress={()=>login(false)}>Entrar</Button><Button disabled={busy} secondary onPress={()=>login(true)}>Criar conta</Button></View></>}
+ </View>{busy&&<ActivityIndicator/>}{!!message&&<Text style={styles.notice}>{message}</Text>}
+ <Text style={styles.caption}>Mapa © OpenStreetMap contributors · Busca Nominatim / OSM. Rotas OSRM demonstrativas. Não usar APIs comunitárias para lançamento em massa sem serviço apropriado.</Text>
+ </ScrollView></SafeAreaView>;
 }
-const s=StyleSheet.create({root:{flex:1,backgroundColor:'#f6f8fc'},content:{maxWidth:1100,width:'100%',alignSelf:'center',padding:20,gap:14},kicker:{color:'#2563eb',fontSize:12,fontWeight:'800'},title:{color:'#14233b',fontSize:30,fontWeight:'800'},subtitle:{color:'#64748b'},notice:{backgroundColor:'#fff4df',padding:14,borderRadius:12,borderWidth:1,borderColor:'#f4d391'},noticeText:{color:'#825300',fontWeight:'700',fontSize:12},legend:{flexDirection:'row',gap:20,flexWrap:'wrap'},map:{height:480,overflow:'hidden',borderRadius:16,backgroundColor:'#e8eef5'},center:{flex:1,justifyContent:'center',alignItems:'center',padding:20,gap:10},error:{color:'#b91c1c'},card:{backgroundColor:'#fff',borderRadius:16,padding:20,gap:12,borderWidth:1,borderColor:'#e5ebf4'},state:{fontSize:22,fontWeight:'800',color:'#14233b'},winner:{fontWeight:'700',color:'#334155'},line:{flexDirection:'row',justifyContent:'space-between',gap:10,flexWrap:'wrap'},footer:{color:'#64748b',fontSize:12},label:{fontWeight:'700',color:'#334155'},muted:{color:'#64748b',fontSize:13},searchRow:{flexDirection:'row',gap:8,flexWrap:'wrap'},input:{borderColor:'#cbd5e1',borderWidth:1,borderRadius:8,padding:12,flexGrow:1,flexBasis:180},button:{padding:12,borderRadius:9,backgroundColor:'#1d4ed8',alignSelf:'flex-start'},buttonText:{color:'#fff',fontWeight:'700'},route:{fontWeight:'700',color:'#0f766e'},foot:{fontSize:11,color:'#64748b'},link:{textDecorationLine:'underline',color:'#2563eb'},switch:{padding:10,backgroundColor:'#e2e8f0',borderRadius:8,alignSelf:'flex-start'},switchText:{fontWeight:'600',color:'#334155'}});
+const styles=StyleSheet.create({root:{flex:1,backgroundColor:'#f3f6fb'},content:{maxWidth:1020,width:'100%',alignSelf:'center',padding:18,gap:13},eyebrow:{color:'#2563eb',fontWeight:'800'},title:{fontSize:27,fontWeight:'800',color:'#14233b'},notice:{backgroundColor:'#fff4df',color:'#815000',padding:12,borderRadius:10},card:{backgroundColor:'white',borderRadius:14,padding:16,gap:12,borderWidth:1,borderColor:'#dbe4ef'},h:{fontWeight:'800',fontSize:16,color:'#14233b'},row:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},input:{borderWidth:1,borderColor:'#cbd5e1',borderRadius:9,padding:12,minWidth:190,flexGrow:1},btn:{backgroundColor:'#1d4ed8',borderRadius:9,padding:12,alignSelf:'flex-start'},caption:{fontSize:12,color:'#64748b'},result:{padding:10,borderTopWidth:1,borderColor:'#e2e8f0',gap:2},map:{height:470,overflow:'hidden',borderRadius:14,backgroundColor:'#e8eef5'},classification:{fontWeight:'800',color:'#334155'}});
