@@ -42,3 +42,15 @@ Mapa © OpenStreetMap contributors. Respeitar as políticas de uso dos tiles e g
 - Clicando em um resultado, abre-se o estabelecimento exato; votos ficam vinculados ao identificador `osm_type + osm_id` e não apenas ao nome.
 - APIs comunitárias podem ficar lentas ou indisponíveis e não são apropriadas para alta demanda. São necessárias limitações de taxa globais e cache no backend antes do lançamento.
 - A busca de pontos OSM não garante que todos os estabelecimentos comerciais existentes estejam mapeados ou tenham nome/endereço completos.
+
+
+## Google Maps + Google Places (Opção A)
+A versão **web** usa Google Maps JavaScript API e Places API (New), mas só se `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` estiver configurada. Enquanto não estiver, a busca OSM provisória permanece.
+1. No Google Cloud, habilite faturamento, **Maps JavaScript API** e **Places API (New)**.
+2. Crie uma **chave de navegador** com restrição de aplicativo por **HTTP referrers** para `https://thiag0ferreira.github.io/mapa-eleitoral-brasil/*` e, se necessário, `https://thiag0ferreira.github.io/*`. Para teste local inclua apenas os domínios localhost indispensáveis.
+3. Restrinja a chave pelas APIs **Maps JavaScript API** e **Places API (New)**. A chave do navegador é pública; jamais publique chaves secretas.
+4. Em GitHub → Settings → Secrets and variables → Actions → Variables, crie `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` com a chave de navegador e execute de novo o workflow de Pages.
+5. No Supabase SQL Editor execute `supabase/migrations/202610270002_google_places.sql`. A migração preserva os votos OSM existentes, que não são automaticamente transferidos para Google Place IDs.
+6. Habilite cotas e alertas de cobrança no Google Cloud e monitore o consumo: busca textual com nome e endereço pode incorrer no SKU Pro. Evite consultas automáticas.
+7. **Ainda pendente:** substituir rota OSRM pela Routes API do Google, configurar SDK nativo Android/iOS com chaves específicas, implementar painel de administração, defesa contra fraude, termos e política de privacidade antes do lançamento público.
+As respostas do Places são usadas apenas durante a sessão. No Supabase persistimos exclusivamente o Place ID (permitido pela política do Google), não fotos, notas, endereços ou conteúdo comercial.
