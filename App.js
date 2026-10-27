@@ -6,18 +6,20 @@ import {googleReady,buscarGooglePlaces} from './src/services/googlePlaces';
 import GoogleMap from './src/screens/GoogleMap';
 import {obterLocalizacaoAtual} from './src/services/localizacao';
 import {supabase,configurado,resumo,votar} from './src/services/supabase';
-import {criarRota} from './src/services/navegacao';
+import {criarRota,urlGoogleMaps} from './src/services/navegacao';
+import NavegacaoAtiva from './src/components/NavegacaoAtiva';
 const BRASILIA={latitude:-15.7939,longitude:-47.8828,label:'Brasília (origem demonstrativa)'};
 const Button=({children,onPress,disabled,secondary})=><Pressable disabled={disabled} onPress={onPress} style={[styles.btn,secondary&&{backgroundColor:'#475569'},disabled&&{opacity:.45}]}><Text style={{color:'white',fontWeight:'700'}}>{children}</Text></Pressable>;
 export default function App(){
  const [origem,setOrigem]=useState(BRASILIA),[query,setQuery]=useState(''),[results,setResults]=useState([]),[place,setPlace]=useState(null);
- const [route,setRoute]=useState(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[session,setSession]=useState(null),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[score,setScore]=useState(null);
+ const [route,setRoute]=useState(null),[navegando,setNavegando]=useState(false),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[session,setSession]=useState(null),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[score,setScore]=useState(null);
  useEffect(()=>{if(!supabase)return;supabase.auth.getSession().then(({data})=>setSession(data.session));const {data:listener}=supabase.auth.onAuthStateChange((_event,s)=>setSession(s));return()=>listener.subscription.unsubscribe()},[]);
  async function perform(fn){setBusy(true);setMessage('');try{await fn()}catch(e){setMessage(e.message||'Ocorreu um erro')}finally{setBusy(false)}}
  const search=()=>perform(async()=>{setPlace(null);setScore(null);setRoute(null);setResults([]);const a=googleReady?await buscarGooglePlaces(query,origem):await buscarEstabelecimentos(query);setResults(a.sort((a,b)=>(distanciaKm(origem,a)??99999)-(distanciaKm(origem,b)??99999)));if(!a.length)setMessage('Nenhum estabelecimento encontrado. Informe o nome ou a unidade e tente novamente.')});
  const select=place=>perform(async()=>{setPlace(place);setScore(null);setRoute(null);setScore(await resumo(place))});
  const gps=()=>perform(async()=>{const p=await obterLocalizacaoAtual();setOrigem(p);setMessage('GPS ativado mediante sua autorização.')});
  const navigate=()=>perform(async()=>{if(place)setRoute(await criarRota(origem,place))});
+ const startNavigation=()=>perform(async()=>{if(!place)throw Error('Selecione um estabelecimento para navegar.');const atual=await obterLocalizacaoAtual();setOrigem(atual);const nova=await criarRota(atual,place);setRoute(nova);setNavegando(true);});
  const login=(signup=false)=>perform(async()=>{if(!supabase)throw Error('Supabase não configurado.');if(password.length<6)throw Error('A senha deve ter ao menos 6 caracteres.');const r=signup?await supabase.auth.signUp({email:email.trim(),password}):await supabase.auth.signInWithPassword({email:email.trim(),password});if(r.error)throw r.error;setMessage(signup?'Cadastro solicitado. Verifique seu e-mail para confirmar, se necessário.':'Login realizado.');});
  const vote=choice=>perform(async()=>{if(!session)throw Error('Faça login primeiro.');await votar(place,choice);setScore(await resumo(place));setMessage('Voto registrado. Você pode alterar seu voto a qualquer momento.')});
  return <SafeAreaView style={styles.root}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -31,9 +33,11 @@ export default function App(){
  {place&&<View style={styles.card}><Text style={styles.h}>{place.name}</Text><Text style={styles.caption}>{place.label}</Text><Text style={styles.placeMeta}>{formatarDistancia(distanciaKm(origem,place))} · Identificador {place.google_place_id||place.osm_type+'/'+place.osm_id}</Text><Text style={styles.classification}>Classificação da comunidade: {score?.classificacao||'sem classificação'}</Text>
  <Text>{score?.total||0} votos · {score?.verdes||0} verdes · {score?.vermelhos||0} vermelhos</Text><Text style={styles.caption}>São necessários pelo menos 20 votos e 60% de predominância para colorir o estabelecimento.</Text>
  {configurado&&session?<View style={styles.row}><Button disabled={busy} onPress={()=>vote('verde')}>Votar verde</Button><Button disabled={busy} onPress={()=>vote('vermelho')}>Votar vermelho</Button></View>:<Text style={styles.caption}>Faça login para votar. {configurado?'':'A votação será ativada quando o Supabase for configurado.'}</Text>}
- <Button disabled={busy} onPress={navigate}>Traçar rota até este lugar</Button>
- {route&&<Text>Rota estimada: {(route.distancia/1000).toFixed(1)} km · {Math.round(route.duracao/60)} min, sem trânsito em tempo real.</Text>}</View>}
- <View style={styles.map}>{googleReady?<GoogleMap destino={place} origem={origem} rota={route}/>:<MapScreen geojson={null} onSelect={()=>{}} destino={place} origem={origem} rota={route} camada={false}/>}</View>
+ <Button disabled={busy} onPress={startNavigation}>{busy?'Preparando...':'▶ Iniciar navegação com GPS'}</Button>
+ <View style={styles.row}><Button disabled={busy} secondary onPress={navigate}>Prévia da rota</Button><Button secondary onPress={()=>Linking.openURL(urlGoogleMaps(place))}>Abrir Google Maps ↗</Button></View>
+ {route&&<Text>Rota estimada: {(route.distancia/1000).toFixed(1)} km · {Math.round(route.duracao/60)} min, sem trânsito em tempo real.</Text>}
+ <Text style={styles.caption}>Navegação no aplicativo: tela cheia, GPS em movimento e próximas orientações aproximadas. Para voz, trânsito e desvios automáticos, abra Google Maps ou Waze.</Text></View>}
+ <View style={styles.map}>{!navegando&&(googleReady?<GoogleMap destino={place} origem={origem} rota={route}/>:<MapScreen destino={place} origem={origem} rota={route}/>)}</View>
  <View style={styles.card}><Text style={styles.h}>Conta e participação</Text>
  {!configurado?<Text style={styles.caption}>Modo visual: configure EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY para habilitar cadastro e votos.</Text>:session?<><Text>Conectado: {session.user.email}</Text><Button secondary onPress={()=>perform(async()=>{const {error}=await supabase.auth.signOut();if(error)throw error;})}>Sair</Button></>:<>
  <TextInput value={email} onChangeText={setEmail} style={styles.input} placeholder="E-mail" autoCapitalize="none" keyboardType="email-address"/>
@@ -41,6 +45,6 @@ export default function App(){
  <View style={styles.row}><Button disabled={busy} onPress={()=>login(false)}>Entrar</Button><Button disabled={busy} secondary onPress={()=>login(true)}>Criar conta</Button></View></>}
  </View>{busy&&<ActivityIndicator/>}{!!message&&<Text style={styles.notice}>{message}</Text>}
  <Text style={styles.caption}>{googleReady?'Mapa e estabelecimentos © Google Maps Platform. Rotas OSRM demonstrativas (serão migradas).':'Mapa © OpenStreetMap contributors · Busca OSM provisória.'}</Text>
- </ScrollView></SafeAreaView>;
+ </ScrollView><NavegacaoAtiva visible={navegando} destino={place} origem={origem} rota={route} onFechar={()=>setNavegando(false)} onRotaAtualizada={setRoute}/></SafeAreaView>;
 }
 const styles=StyleSheet.create({root:{flex:1,backgroundColor:'#f3f6fb'},content:{maxWidth:1020,width:'100%',alignSelf:'center',padding:18,gap:13},eyebrow:{color:'#2563eb',fontWeight:'800'},title:{fontSize:27,fontWeight:'800',color:'#14233b'},notice:{backgroundColor:'#fff4df',color:'#815000',padding:12,borderRadius:10},card:{backgroundColor:'white',borderRadius:14,padding:16,gap:12,borderWidth:1,borderColor:'#dbe4ef'},h:{fontWeight:'800',fontSize:16,color:'#14233b'},row:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},input:{borderWidth:1,borderColor:'#cbd5e1',borderRadius:9,padding:12,minWidth:190,flexGrow:1},btn:{backgroundColor:'#1d4ed8',borderRadius:9,padding:12,alignSelf:'flex-start'},caption:{fontSize:12,color:'#64748b'},result:{padding:12,borderTopWidth:1,borderColor:'#e2e8f0',gap:5},selectedResult:{backgroundColor:'#eff6ff',borderLeftWidth:3,borderLeftColor:'#2563eb'},resultHead:{flexDirection:'row',justifyContent:'space-between',flexWrap:'wrap',alignItems:'center',gap:6},distance:{fontSize:12,fontWeight:'700',color:'#2563eb'},placeMeta:{fontSize:11,color:'#475569'},map:{height:470,overflow:'hidden',borderRadius:14,backgroundColor:'#e8eef5'},classification:{fontWeight:'800',color:'#334155'}});
