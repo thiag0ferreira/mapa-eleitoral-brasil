@@ -119,7 +119,7 @@ export default function App(){
  const selectedSaved=favorites.some(p=>p.id===place?.id);
  const category=score?.classificacao||'sem classificação';
  const badgeColor=category==='verde'?COLORS.green:category==='vermelho'?COLORS.red:'#9ba5b2';
- const sheetHeight=Math.min(height*(wide?.83:.82),panel==='home'?318:panel==='place'?470:panel==='search'?500:panel==='account'?430:panel==='menu'?390:425);
+ const sheetHeight=Math.min(height*(wide?0.83:0.82),panel==='home'?318:panel==='place'?470:panel==='search'?500:panel==='account'?430:panel==='menu'?390:425);
  const openSearch=()=>{setPanel('search');setMessage('')};
  const renderList=(items)=>items.map(p=><Pressable key={p.id} onPress={()=>selectPlace(p)} style={styles.placeItem}>
   <View style={styles.placeIcon}><Text style={{fontSize:20}}>📍</Text></View>
@@ -132,7 +132,7 @@ export default function App(){
  </Pressable>);
 
  return <SafeAreaView style={styles.root}>
-  <View style={styles.mapCanvas}>
+  <View style={[styles.mapCanvas,{bottom:wide?0:sheetHeight}]}>
    {googleReady?
     <GoogleMap origem={origem||DF_CENTRO} destino={place} rota={route} posicaoAtual={origem} resultados={results} onPlacePress={selectPlace}/>:
     <MapScreen origem={origem||DF_CENTRO} destino={place} rota={route} posicaoAtual={origem} resultados={results} onPlacePress={selectPlace}/>}
