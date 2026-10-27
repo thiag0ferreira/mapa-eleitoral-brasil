@@ -54,3 +54,11 @@ A versão **web** usa Google Maps JavaScript API e Places API (New), mas só se 
 6. Habilite cotas e alertas de cobrança no Google Cloud e monitore o consumo: busca textual com nome e endereço pode incorrer no SKU Pro. Evite consultas automáticas.
 7. **Ainda pendente:** substituir rota OSRM pela Routes API do Google, configurar SDK nativo Android/iOS com chaves específicas, implementar painel de administração, defesa contra fraude, termos e política de privacidade antes do lançamento público.
 As respostas do Places são usadas apenas durante a sessão. No Supabase persistimos exclusivamente o Place ID (permitido pela política do Google), não fotos, notas, endereços ou conteúdo comercial.
+
+## Navegação em tela cheia — Protótipo de acompanhamento (2026-10-27)
+
+Depois de escolher um lugar, clique em **▶ Iniciar navegação com GPS**. O aplicativo solicita sua localização novamente (sem usar a origem fixa em Brasília), consulta uma rota rodoviária aproximada no OSRM e abre a visualização de navegação em tela cheia. Enquanto a página estiver visível e o GPS autorizado, acompanha a posição com `watchPosition` no navegador, orienta a próxima manobra de forma textual, exibe quilômetros e minutos restantes estimados e indica possível saída da rota. **Não oferece voz, tráfego em tempo real, desvio automático ou assistência à condução de nível Waze**.
+
+O usuário pode acionar **Seguir GPS**, **Ver rota**, **Recalcular** (manual) ou **Abrir Google Maps/Waze**. Os links externos usam o destino (Place ID do Google quando disponível) e deixam que o aplicativo de navegação instalado use o GPS atual para iniciar orientação guiada. Google Maps pode abrir prévia em vez de orientação em determinados dispositivos. Não é preciso configurar outra API para abrir os links externos.
+
+**Segurança e privacidade:** a posição de GPS só é monitorada durante a tela de navegação e o acompanhamento se encerra ao fechar; não há gravação do histórico de localização no Supabase. A navegação própria depende de sinal GPS e da página em primeiro plano. Faça seus testes parado ou como passageiro. O servidor OSRM é experimental, não indicado para dirigir dependendo exclusivamente dele ou para uso em massa.
