@@ -33,3 +33,12 @@ No celular: `npm start` e Expo Go.
 
 ## Licença e créditos
 Mapa © OpenStreetMap contributors. Respeitar as políticas de uso dos tiles e geocodificação antes de escalar.
+
+## Evolução da busca (0.3.1)
+
+- Busca de nomes de locais nas categorias comerciais do OpenStreetMap por Overpass; fallback no Nominatim.
+- Resultados múltiplos com nome, endereço, tipo, identificador OSM e distância **em linha reta**.
+- Ordenação pela distância desde a origem selecionada (GPS, quando autorizado).
+- Clicando em um resultado, abre-se o estabelecimento exato; votos ficam vinculados ao identificador `osm_type + osm_id` e não apenas ao nome.
+- APIs comunitárias podem ficar lentas ou indisponíveis e não são apropriadas para alta demanda. São necessárias limitações de taxa globais e cache no backend antes do lançamento.
+- A busca de pontos OSM não garante que todos os estabelecimentos comerciais existentes estejam mapeados ou tenham nome/endereço completos.
