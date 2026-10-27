@@ -45,6 +45,9 @@ export default function MapScreen({destino,origem,rota,posicaoAtual,seguir=false
     if(bounds.isValid())map.current.fitBounds(bounds,{padding:[30,30],maxZoom:14});
    }else if(destino){
     map.current.setView([destino.latitude,destino.longitude],15,{animate:true});
+   }else if(resultados.length){
+    const bounds=L.latLngBounds(resultados.map(p=>[p.latitude,p.longitude]));
+    if(bounds.isValid())map.current.fitBounds(bounds,{padding:[35,35],maxZoom:14});
    }else if(origem){
     map.current.setView([origem.latitude,origem.longitude],14,{animate:false});
    }
