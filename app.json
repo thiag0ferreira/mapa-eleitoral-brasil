@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Mapa Eleitoral Brasil",
+    "slug": "mapa-eleitoral-brasil",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.com.mapaeleitoralbrasil.app"
+    },
+    "android": {
+      "package": "br.com.mapaeleitoralbrasil.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "name": "Mapa Eleitoral Brasil"
+    },
+    "experiments": {
+      "baseUrl": "/mapa-eleitoral-brasil"
+    }
+  }
+}
