@@ -61,6 +61,10 @@ export default function GoogleMap({origem,destino,rota,posicaoAtual,seguir=false
    }else if(destino){
     map.current.setCenter({lat:destino.latitude,lng:destino.longitude});
     map.current.setZoom(15);
+   }else if(resultados.length){
+    const b=new g.LatLngBounds();
+    resultados.forEach(p=>b.extend({lat:p.latitude,lng:p.longitude}));
+    map.current.fitBounds(b,42);
    }else if(origem){
     map.current.setCenter({lat:origem.latitude,lng:origem.longitude});
     map.current.setZoom(14);
