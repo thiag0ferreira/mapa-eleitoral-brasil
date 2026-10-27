@@ -5,7 +5,7 @@ import GoogleMap from './src/screens/GoogleMap';
 import NavegacaoAtiva from './src/components/NavegacaoAtiva';
 import {googleReady,buscarGooglePlaces} from './src/services/googlePlaces';
 import {buscarEstabelecimentos,distanciaKm,formatarDistancia} from './src/services/lugares';
-import {obterLocalizacaoAtual} from './src/services/localizacao';
+import {obterLocalizacaoAtual,observarLocalizacao} from './src/services/localizacao';
 import {supabase,configurado,resumo,votar} from './src/services/supabase';
 import {criarRota,urlGoogleMaps,urlWaze,distanciaFormatada} from './src/services/navegacao';
 
@@ -25,6 +25,7 @@ export default function App(){
  const [panel,setPanel]=useState('home');
  const [origem,setOrigem]=useState(null);
  const [gpsStatus,setGpsStatus]=useState('Ative o GPS');
+ const [followHome,setFollowHome]=useState(true);
  const [query,setQuery]=useState('');
  const [results,setResults]=useState([]);
  const [place,setPlace]=useState(null);
@@ -48,11 +49,14 @@ export default function App(){
  },[]);
  // A permissão de GPS é solicitada pelo navegador. Se negada, o app continua utilizável.
  useEffect(()=>{
-  let active=true;
-  obterLocalizacaoAtual().then(p=>{if(active){setOrigem(p);setGpsStatus('GPS ativo')}})
+  if(navegando)return;
+  let active=true,unsub=null;
+  observarLocalizacao(p=>{if(active){setOrigem(p);setGpsStatus('GPS ativo')}},
+   ()=>{if(active)setGpsStatus('Toque em ◎ para verificar o GPS')})
+   .then(fn=>{if(active)unsub=fn;else fn()})
    .catch(()=>{if(active)setGpsStatus('Toque em ◎ para ativar o GPS')});
-  return()=>{active=false};
- },[]);
+  return()=>{active=false;unsub?.()};
+ },[navegando]);
  async function action(fn){
   if(busy)return;
   setBusy(true);setMessage('');
@@ -60,19 +64,19 @@ export default function App(){
   finally{setBusy(false)}
  }
  const gps=()=>action(async()=>{
-  const p=await obterLocalizacaoAtual();setOrigem(p);setGpsStatus('GPS ativo');
+  const p=await obterLocalizacaoAtual();setOrigem(p);setFollowHome(true);setGpsStatus('GPS ativo');
  });
  const search=()=>action(async()=>{
   if(query.trim().length<3)throw Error('Digite pelo menos 3 caracteres para buscar.');
   setResults([]);
   const found=googleReady?await buscarGooglePlaces(query,origem||DF_CENTRO):await buscarEstabelecimentos(query);
   const ordered=found.slice().sort((a,b)=>(distanciaKm(origem,a)??99999)-(distanciaKm(origem,b)??99999));
-  setResults(ordered);
+  setResults(ordered);setFollowHome(false);
   if(!ordered.length)setMessage('Nenhum estabelecimento encontrado. Tente nome e unidade.');
  });
  const selectPlace=async(p)=>{
   if(!p)return;
-  setPlace(p);setPanel('place');setRoute(null);setScore(null);
+  setPlace(p);setPanel('place');setRoute(null);setScore(null);setFollowHome(false);
   setRecent(old=>[p,...old.filter(x=>x.id!==p.id)].slice(0,6));
   if(configurado){
    try{const s=await resumo(p);setScore(s)}
@@ -134,8 +138,8 @@ export default function App(){
  return <SafeAreaView style={styles.root}>
   <View style={[styles.mapCanvas,{bottom:wide?0:sheetHeight}]}>
    {googleReady?
-    <GoogleMap origem={origem||DF_CENTRO} destino={place} rota={route} posicaoAtual={origem} resultados={results} onPlacePress={selectPlace}/>:
-    <MapScreen origem={origem||DF_CENTRO} destino={place} rota={route} posicaoAtual={origem} resultados={results} onPlacePress={selectPlace}/>}
+    <GoogleMap origem={origem||DF_CENTRO} destino={place} rota={route} posicaoAtual={origem} seguir={followHome&&!place&&!route} resultados={results} onPlacePress={selectPlace}/>:
+    <MapScreen origem={origem||DF_CENTRO} destino={place} rota={route} posicaoAtual={origem} seguir={followHome&&!place&&!route} resultados={results} onPlacePress={selectPlace}/>}
   </View>
   <View style={styles.topControls} pointerEvents="box-none">
    <Pressable accessibilityRole="button" accessibilityLabel="Abrir menu" onPress={()=>setPanel(panel==='menu'?'home':'menu')} style={styles.floatButton}><Text style={styles.floatIcon}>☰</Text></Pressable>
