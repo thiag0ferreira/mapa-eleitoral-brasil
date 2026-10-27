@@ -1,50 +1,46 @@
-# Mapa Eleitoral Brasil 🇧🇷
+# Mapa Eleitoral Brasil — v0.2 (navegação experimental)
 
-Protótipo **Expo + React Native + web** com mapa dos estados do Brasil.
+Aplicativo Expo (Android/iOS/web) com camada eleitoral **fictícia** e consulta de destinos por endereço.
 
-> **DADOS FICTÍCIOS:** os votos demonstrados não são resultados do TSE. A integração oficial será uma etapa posterior.
+**IMPORTANTE:** os resultados de voto exibidos NÃO são dados do TSE. Não é possível inferir a opinião política dos moradores ou a receptividade de pessoas em um endereço pelo resultado eleitoral.
 
-## Rodar em computador
+## Funções
 
-Requer Node.js 22 e npm.
+- Buscar destino brasileiro manualmente (sem autocomplete);
+- Exibir marcador no mapa;
+- Traçar rota estimada desde **Brasília, DF (origem fixa demonstrativa)**;
+- Exibir distância e duração estimadas, sem tráfego ao vivo;
+- Ligar/desligar a camada eleitoral fictícia por estado;
+- Executar no navegador e em React Native.
+
+## Executar
 
 ```bash
 npm install
 npm run web
 ```
 
-## Rodar no celular
+Para Android/iOS, execute `npm start` e teste no Expo Go. Funcionalidade nativa ainda não validada em aparelhos.
 
-```bash
-npm install
-npm start
-```
+## GitHub Pages
 
-Leia o QR code com o Expo Go. O modo nativo utiliza `react-native-maps` e a versão web utiliza Leaflet/OpenStreetMap.
+No repositório, abra **Settings → Pages**, selecione **GitHub Actions** e acompanhe o workflow `Publicar web no GitHub Pages`. Endereço: https://thiag0ferreira.github.io/mapa-eleitoral-brasil/
 
-## Hospedar grátis no GitHub Pages
+## Serviços externos e limites
 
-Um workflow em `.github/workflows/pages.yml` publica a pasta `dist` em cada push para `main`.
+- Geocodificação: Nominatim público, apenas buscas explicitamente acionadas pelo usuário; no máximo uma busca por segundo por instância, cache durante a sessão e nenhuma sugestão automática. **O limite oficial é global ao aplicativo, não por usuário**. Essa implementação somente serve para teste com pouquíssimos usuários, não para uso público em escala. Antes de lançar comercialmente, migrar a provedor próprio/contratado ou proxy com rate limiting central. Leia https://operations.osmfoundation.org/policies/nominatim/
+- Rotas: servidor público demonstrativo OSRM, sem SLA e inadequado para distribuição massiva.
+- Tiles: OpenStreetMap comunitário, sujeito a política e restrições de carga.
+- Origem: Brasília, fixa apenas para demonstração. Ainda não há GPS, orientação vocal, atualizações de trânsito ou navegação curva a curva.
 
-1. Entre em **Settings → Pages** no repositório.
-2. Em **Build and deployment → Source**, escolha **GitHub Actions**.
-3. Acesse **Actions → Publicar web no GitHub Pages** para acompanhar ou executar o workflow.
-4. Depois que o deploy estiver concluído com sucesso, abra https://thiag0ferreira.github.io/mapa-eleitoral-brasil/.
+## Fonte eleitoral e granularidade
 
-O endereço não estará disponível até a primeira publicação bem-sucedida.
+Atualmente a camada é inteiramente **simulada por UF** (`src/data/demo.js`). Futuro processamento **offline** dos dados abertos TSE e malhas IBGE para municípios e pontos georreferenciados dos locais de votação. Um ponto eleitoral não descreve uma área geográfica de influência e não deve pintar ruas ou residências arbitrariamente. Toda eleição exibirá ano, turno, fonte, status da apuração e definição dos candidatos comparados.
 
-## Organização
+## Próximas etapas
 
-- `App.js`: interface, legenda, painel e aviso de simulação.
-- `src/screens/MapScreen.web.js`: mapa web Leaflet.
-- `src/screens/MapScreen.native.js`: mapa nativo React Native Maps.
-- `src/data/demo.js`: simulação de votos em 27 UFs.
-- `src/services/geometria.js`: carregamento externo de malha GeoJSON.
-
-## Limitações atuais
-
-- Somente estados, ainda sem municípios.
-- Geometria depende de fonte comunitária externa e conexão com a internet.
-- Ainda não há dados oficiais nem atualizações em tempo real.
-- Não há testes de aparelho/browser confirmados.
-- Para tráfego elevado, adotar provedor de mapas adequado à política de utilização de tiles.
+1. Integração offline auditável TSE 2022;
+2. GeoJSON municipal simplificado sob demanda;
+3. Pontos reais de locais de votação com metadados agregados;
+4. GPS com permissão e origem editável;
+5. Serviço de geocodificação e rotas com capacidade e SLA para uso em massa.
