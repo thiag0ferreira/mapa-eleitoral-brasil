@@ -62,3 +62,19 @@ Depois de escolher um lugar, clique em **▶ Iniciar navegação com GPS**. O ap
 O usuário pode acionar **Seguir GPS**, **Ver rota**, **Recalcular** (manual) ou **Abrir Google Maps/Waze**. Os links externos usam o destino (Place ID do Google quando disponível) e deixam que o aplicativo de navegação instalado use o GPS atual para iniciar orientação guiada. Google Maps pode abrir prévia em vez de orientação em determinados dispositivos. Não é preciso configurar outra API para abrir os links externos.
 
 **Segurança e privacidade:** a posição de GPS só é monitorada durante a tela de navegação e o acompanhamento se encerra ao fechar; não há gravação do histórico de localização no Supabase. A navegação própria depende de sinal GPS e da página em primeiro plano. Faça seus testes parado ou como passageiro. O servidor OSRM é experimental, não indicado para dirigir dependendo exclusivamente dele ou para uso em massa.
+
+## Provedor gratuito principal: Geoapify
+
+O Google Maps Platform foi desativado por decisão do responsável pelo projeto. A versão web **não importa Google Maps ou Google Places nem utiliza sua chave**; links opcionais para abrir Google Maps/Waze no celular continuam disponíveis e não usam a API comercial do Google.
+
+A chave `EXPO_PUBLIC_GEOAPIFY_API_KEY` liga busca geocodificada e rotas de carro Geoapify. Sem chave, a versão de teste mantém busca OSM/Overpass e rotas OSRM. O mapa continua usando Leaflet/OpenStreetMap (não é o visual de navegação 3D do Waze). Geocoding não possui cobertura idêntica ao Google Places e algumas unidades comerciais podem faltar.
+
+1. Crie um projeto no plano Free em https://myprojects.geoapify.com/ (sem cartão).
+2. Vá a API Keys, use uma chave do projeto e configure **Allowed HTTP referrers / origins** para `https://thiag0ferreira.github.io` e a página do aplicativo. Chaves públicas ficam visíveis em apps web; nunca use chave sem restrições em produção.
+3. No GitHub → Settings → Secrets and variables → Actions → Variables, adicione `EXPO_PUBLIC_GEOAPIFY_API_KEY` com a chave pública restrita. NÃO envie a chave no chat.
+4. No Supabase → SQL Editor, execute `supabase/migrations/202610280001_geoapify_places.sql`, para permitir votação em estabelecimentos com ID Geoapify (votos antigos OSM permanecem).
+5. Execute `Publicar web no GitHub Pages` ou faça um novo commit. A API só será usada depois do novo build com essa variável.
+
+**Limites:** franquia Free de 3.000 créditos por dia compartilhados pelos serviços, não 3.000 usuários; respeite limites por segundo. Rotas geocodificadas não têm trânsito ao vivo. A identificação de negócios usa metadados OSM existentes na resposta Geoapify; endereços não identificados como estabelecimentos ficam sem votação. Recomendado antifraude e verificação server-side de IDs antes do lançamento público.
+
+Atribuição obrigatória quando utilizarmos os dados Geoapify: exibir `Powered by Geoapify` com link e a atribuição às fontes cartográficas. No frontend há texto de atribuição no painel de busca; na interface pública completa, manter essas informações acessíveis.

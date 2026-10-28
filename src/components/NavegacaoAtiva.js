@@ -1,8 +1,8 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {SafeAreaView,View,Text,Pressable,Modal,StyleSheet,Linking,ActivityIndicator} from 'react-native';
-import GoogleMap from '../screens/GoogleMap';
+
 import MapScreen from '../screens/MapScreen';
-import {googleReady} from '../services/googlePlaces';
+
 import {observarLocalizacao} from '../services/localizacao';
 import {criarRota,distanciaMetros,distanciaFormatada,orientacao,progressoNaRota,urlGoogleMaps,urlWaze} from '../services/navegacao';
 const Btn=({children,onPress,disabled,secondary})=><Pressable accessibilityRole="button" onPress={onPress} disabled={disabled}
@@ -49,8 +49,7 @@ export default function NavegacaoAtiva({visible,destino,origem,rota,onFechar,onR
    </View>
   </View>
   <View style={s.map}>
-   {googleReady?<GoogleMap origem={origem} destino={destino} rota={rota} posicaoAtual={posicao} seguir={seguir} visaoGeral={!seguir}/>:
-   <MapScreen origem={origem} destino={destino} rota={rota} posicaoAtual={posicao} seguir={seguir} visaoGeral={!seguir}/>}
+   <MapScreen origem={origem} destino={destino} rota={rota} posicaoAtual={posicao} seguir={seguir} visaoGeral={!seguir}/>
    <View style={s.tools}>
     <Btn secondary onPress={()=>setSeguir(true)}>◎ GPS</Btn>
     <Btn secondary onPress={()=>setSeguir(false)}>◫ Rota</Btn>

@@ -1,5 +1,6 @@
 // Serviço experimental OSRM para consultas de rota de baixo volume.
 // Não usar o servidor comunitário para navegação pública em escala.
+import {geoapifyReady,rotaGeoapify} from './geoapify';
 const BASE_ROTA='https://router.project-osrm.org/route/v1/driving/';
 
 export function distanciaMetros(a,b){
@@ -12,6 +13,7 @@ export function distanciaMetros(a,b){
 const caminho=(p)=>p.longitude+','+p.latitude;
 export async function criarRota(origem,destino){
  if(!origem||!destino)throw Error('Selecione origem e destino.');
+ if(geoapifyReady)return rotaGeoapify(origem,destino);
  const url=BASE_ROTA+caminho(origem)+';'+caminho(destino)+'?overview=full&geometries=geojson&steps=true';
  const response=await fetch(url);
  if(!response.ok)throw new Error('Serviço de rotas indisponível. Use Abrir no Google Maps para navegar.');
@@ -28,6 +30,7 @@ export async function criarRota(origem,destino){
 }
 export function orientacao(passo){
  if(!passo)return 'Siga a rota indicada no mapa';
+ if(passo.texto)return passo.texto;
  const nome=passo.via?' na '+passo.via:'';
  const tipo=passo.tipo,d=passo.direcao;
  if(tipo==='arrive')return 'Você chegou ao destino';

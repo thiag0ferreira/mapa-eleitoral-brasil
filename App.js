@@ -1,9 +1,9 @@
 import React,{useEffect,useState} from 'react';
 import {SafeAreaView,View,Text,TextInput,Pressable,ScrollView,StyleSheet,ActivityIndicator,Linking,useWindowDimensions} from 'react-native';
 import MapScreen from './src/screens/MapScreen';
-import GoogleMap from './src/screens/GoogleMap';
+import {geoapifyReady,buscarLugaresGeoapify} from './src/services/geoapify';
 import NavegacaoAtiva from './src/components/NavegacaoAtiva';
-import {googleReady,buscarGooglePlaces} from './src/services/googlePlaces';
+
 import {buscarEstabelecimentos,distanciaKm,formatarDistancia} from './src/services/lugares';
 import {obterLocalizacaoAtual,observarLocalizacao} from './src/services/localizacao';
 import {supabase,configurado,resumo,votar} from './src/services/supabase';
@@ -69,7 +69,7 @@ export default function App(){
  const search=()=>action(async()=>{
   if(query.trim().length<3)throw Error('Digite pelo menos 3 caracteres para buscar.');
   setResults([]);
-  const found=googleReady?await buscarGooglePlaces(query,origem||DF_CENTRO):await buscarEstabelecimentos(query);
+  const found=geoapifyReady?await buscarLugaresGeoapify(query,origem||DF_CENTRO):await buscarEstabelecimentos(query);
   const ordered=found.slice().sort((a,b)=>(distanciaKm(origem,a)??99999)-(distanciaKm(origem,b)??99999));
   setResults(ordered);setFollowHome(false);
   if(!ordered.length)setMessage('Nenhum estabelecimento encontrado. Tente nome e unidade.');
@@ -78,7 +78,7 @@ export default function App(){
   if(!p)return;
   setPlace(p);setPanel('place');setRoute(null);setScore(null);setFollowHome(false);
   setRecent(old=>[p,...old.filter(x=>x.id!==p.id)].slice(0,6));
-  if(configurado){
+  if(configurado&&p.voteEligible!==false){
    try{const s=await resumo(p);setScore(s)}
    catch(_e){setMessage('Informações de votação indisponíveis para esse lugar.')}
   }
@@ -104,6 +104,7 @@ export default function App(){
   if(!session){setPanel('account');throw Error('Entre na sua conta para votar.')}
   if(!configurado)throw Error('Supabase ainda não configurado.');
   if(!place)return;
+  if(place.voteEligible===false)throw Error('Endereços e residências não recebem classificação política. Selecione um estabelecimento cadastrado.');
   await votar(place,choice);
   setScore(await resumo(place));setMessage('Voto registrado. Você pode alterar sua escolha.');
  });
@@ -137,9 +138,7 @@ export default function App(){
 
  return <SafeAreaView style={styles.root}>
   <View style={[styles.mapCanvas,{bottom:wide?0:sheetHeight}]}>
-   {googleReady?
-    <GoogleMap origem={origem||DF_CENTRO} destino={place} rota={route} posicaoAtual={origem} seguir={followHome&&!place&&!route} resultados={results} onPlacePress={selectPlace}/>:
-    <MapScreen origem={origem||DF_CENTRO} destino={place} rota={route} posicaoAtual={origem} seguir={followHome&&!place&&!route} resultados={results} onPlacePress={selectPlace}/>}
+   <MapScreen origem={origem||DF_CENTRO} destino={place} rota={route} posicaoAtual={origem} seguir={followHome&&!place&&!route} resultados={results} onPlacePress={selectPlace}/>
   </View>
   <View style={styles.topControls} pointerEvents="box-none">
    <Pressable accessibilityRole="button" accessibilityLabel="Abrir menu" onPress={()=>setPanel(panel==='menu'?'home':'menu')} style={styles.floatButton}><Text style={styles.floatIcon}>☰</Text></Pressable>
@@ -187,7 +186,7 @@ export default function App(){
       accessibilityLabel="Pesquisar estabelecimentos" autoCorrect={false}/>
      <Tap variant="primary" onPress={search} disabled={busy}>Buscar</Tap>
     </View>
-    <Text style={styles.caption}>{googleReady?'Busca Google Places • Distrito Federal':'Busca OpenStreetMap temporária • Distrito Federal'}</Text>
+    <Text style={styles.caption}>{geoapifyReady?'Busca Geoapify • Distrito Federal • Powered by Geoapify':'Busca OpenStreetMap temporária • Configure Geoapify para melhorar a pesquisa'}</Text>
     <ScrollView style={{flex:1}} keyboardShouldPersistTaps="handled">
      {busy?<ActivityIndicator color={COLORS.blue} style={{marginTop:15}}/>:
      results.length?<><Text style={styles.resultCount}>{results.length} resultado(s) · confira o endereço</Text>{renderList(results)}</>:
@@ -202,7 +201,7 @@ export default function App(){
      <Pressable onPress={toggleFav} accessibilityLabel="Adicionar ou remover favorito"><Text style={styles.fav}>{selectedSaved?'★':'☆'}</Text></Pressable>
     </View>
     <ScrollView style={{flex:1}} keyboardShouldPersistTaps="handled">
-     <View style={styles.votePanel}>
+     {place.voteEligible===false?<View style={styles.votePanel}><Text style={styles.caption}>Este destino é um endereço, não um estabelecimento identificado. É possível navegar até ele, mas não votar.</Text></View>:<View style={styles.votePanel}>
       <View style={styles.voteHeader}><View style={[styles.dot,{backgroundColor:badgeColor}]}/><Text style={styles.voteTitle}>Classificação da comunidade: {category}</Text></View>
       <Text style={styles.voteCount}>{score?.total||0} votos · {score?.verdes||0} verdes · {score?.vermelhos||0} vermelhos</Text>
       <Text style={styles.caption}>Opiniões de usuários, não posição oficial do estabelecimento. Classificação pública após 20 votos e maioria de 60%.</Text>
@@ -210,7 +209,7 @@ export default function App(){
        <Tap onPress={()=>vote('verde')} style={styles.greenButton} disabled={busy}>Votar verde</Tap>
        <Tap onPress={()=>vote('vermelho')} style={styles.redButton} disabled={busy}>Votar vermelho</Tap>
       </View>
-     </View>
+     </View>}
      {route&&<Text style={styles.routeSummary}>Rota: {distanciaFormatada(route.distancia)} · {Math.round(route.duracao/60)} min estimados</Text>}
      <Tap variant="primary" onPress={startNavigation} disabled={busy} style={{alignSelf:'stretch',paddingVertical:14}}>▶ Iniciar navegação</Tap>
      <View style={styles.voteActions}>
