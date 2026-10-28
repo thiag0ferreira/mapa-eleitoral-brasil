@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Mapa Eleitoral Brasil",
+    "name": "Direita Negócios DF",
     "slug": "mapa-eleitoral-brasil",
-    "version": "0.3.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "platforms": [
@@ -34,10 +34,11 @@
     ],
     "web": {
       "bundler": "metro",
-      "name": "Mapa Eleitoral Brasil"
+      "name": "Direita Negócios DF"
     },
     "experiments": {
       "baseUrl": "/mapa-eleitoral-brasil"
-    }
+    },
+    "description": "Marketplace gratuito de negócios e serviços do Distrito Federal"
   }
 }

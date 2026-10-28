@@ -10,12 +10,12 @@ export function Btn({children,onPress,secondary=false,disabled=false,style}){
   <Text style={[ui.buttonText,secondary&&ui.buttonOutlineText]}>{children}</Text>
  </Pressable>;
 }
-export function Field({label,value,onChangeText,placeholder,multiline=false,keyboardType,required=false,maxLength}){
+export function Field({label,value,onChangeText,placeholder,multiline=false,keyboardType,required=false,maxLength,secureTextEntry=false,autoCapitalize='sentences'}){
  return <View style={{gap:6}}>
   <Text style={ui.label}>{label}{required?' *':''}</Text>
   <TextInput style={[ui.input,multiline&&{height:94,textAlignVertical:'top'}]} value={value}
    onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor="#8995a1"
-   multiline={multiline} keyboardType={keyboardType} maxLength={maxLength}/>
+   multiline={multiline} keyboardType={keyboardType} maxLength={maxLength} secureTextEntry={secureTextEntry} autoCapitalize={autoCapitalize}/>
  </View>;
 }
 export function SelectModal({label,items,value,onChange,placeholder='Selecionar',disabled=false}){

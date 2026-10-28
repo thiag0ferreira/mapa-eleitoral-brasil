@@ -302,9 +302,9 @@ export default function MarketplaceApp(){
         <Btn secondary onPress={logout}>Sair da conta</Btn></View></>:
        <>
         <Text style={ui.h3}>Entrar ou criar conta grátis</Text>
-        <Field label="E-mail" value={email} onChangeText={setEmail} keyboardType="email-address" placeholder="seu@email.com"/>
-        <Field label="Senha" value={password} onChangeText={setPassword} placeholder="Mínimo 8 caracteres"/>
-        <Text style={ui.muted}>A senha ficará oculta após o campo de cadastro do próximo ajuste. Não utilize senhas sensíveis enquanto isso.</Text>
+        <Field label="E-mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="seu@email.com"/>
+        <Field label="Senha" value={password} onChangeText={setPassword} placeholder="Mínimo 8 caracteres" secureTextEntry autoCapitalize="none"/>
+        
         <View style={ui.row}><Btn disabled={busy} onPress={()=>login(false)}>Entrar</Btn><Btn secondary disabled={busy} onPress={()=>login(true)}>Criar conta grátis</Btn></View>
         <Text style={ui.muted}>O Supabase pode enviar um e-mail de confirmação antes de liberar seu acesso.</Text>
        </>}
