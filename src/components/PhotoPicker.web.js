@@ -10,6 +10,6 @@ export default function PhotoPicker({value,onChange}){
   <input ref={ref} type="file" accept="image/jpeg,image/png,image/webp"
    onChange={e=>onChange(e.target.files?.[0]||null)}
    style={{position:'absolute',width:1,height:1,opacity:0,pointerEvents:'none'}}/>
-  <Text style={{color:'#64748b',fontSize:11}}>Máximo: 3 MB. A imagem será pública somente quando associada ao anúncio.</Text>
+  <Text style={{color:'#64748b',fontSize:11}}>Máximo: 3 MB. As fotos enviadas ficam armazenadas em bucket público. Não envie documentos ou fotos pessoais.</Text>
  </View>;
 }

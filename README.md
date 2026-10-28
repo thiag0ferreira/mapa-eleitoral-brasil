@@ -82,7 +82,7 @@ npm run web
 - O **administrador aprova manualmente** todos os anúncios, produtos e avaliações.
 - O catálogo público não identifica nem classifica posicionamento político de pessoas.
 - Cadastros e avaliações devem respeitar LGPD, direitos autorais, regras profissionais (incluindo OAB e serviços de saúde) e direitos dos consumidores.
-- Before lançamento aberto: adicionar denúncias, bloqueio de spam, política de privacidade, termos de uso, exclusão de conta e controle antiabuso; testar limites de storage/DB do Supabase Free.
+- Antes do lançamento aberto: adicionar denúncias, bloqueio de spam, política de privacidade, termos de uso, exclusão de conta e controle antiabuso; testar limites de storage/DB do Supabase Free.
 - Dados de região são **regiões administrativas do DF**, e não municípios diferentes. A lista é local.
 - Em contas com Auth obrigatório de confirmação de e-mail, a pessoa precisa confirmar antes do login.
 - O projeto usa GitHub Pages para frontend e Supabase para backend; plano gratuito tem limites de tráfego e armazenamento.

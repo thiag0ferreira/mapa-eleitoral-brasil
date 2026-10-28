@@ -26,7 +26,7 @@ export function SelectModal({label,items,value,onChange,placeholder='Selecionar'
   {!!label&&<Text style={ui.label}>{label}</Text>}
   <Pressable accessibilityRole="button" disabled={disabled} onPress={()=>{setOpen(true);setFilter('')}}
    style={[ui.input,{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}]}>
-   <Text style={{color:value?COLOR.ink:'#7f8c9b',fontWeight:'600',flexShrink:1}}>{labelOf(items,value)||placeholder}</Text>
+   <Text style={{color:value?COLOR.ink:'#7f8c9b',fontWeight:'600',flexShrink:1}}>{items.find(p=>p.id===value)?.name||placeholder}</Text>
    <Text style={{color:COLOR.muted}}>⌄</Text>
   </Pressable>
   <Modal visible={open} transparent animationType="slide" onRequestClose={()=>setOpen(false)}>
